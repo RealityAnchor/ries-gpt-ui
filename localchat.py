@@ -23,28 +23,32 @@ class ChatBot:
         self.timestamp = datetime.now().strftime('%Y-%m-%d_%H%M%S')
         self.history_menu_var = StringVar()
         self.history_menu_var.set("History")
-        self.input_focus = True
 
         self.border_size = 8
-        self.chat_box = Text(master, wrap=WORD, fg="#555", bg="#000", font=("Arial", 14), state=DISABLED)
-        self.chat_box.config(insertbackground="#975")
+        self.chat_box = Text(master, wrap=WORD, fg="#555", bg="#000", font=("Arial", 14), state=DISABLED, insertbackground="#975")
+        self.chat_box.bind("<FocusIn>", lambda event, box=self.chat_box: self.toggle_bg_colour(box, event))
+        self.chat_box.bind("<FocusOut>", lambda event, box=self.chat_box: self.toggle_bg_colour(box, event))
         self.chat_box.grid(row=0, column=0, sticky=N+S+E+W, padx=self.border_size, pady=self.border_size)
         self.chat_box.tag_configure("user", foreground="#555")
         self.chat_box.tag_configure("bot", foreground="#975")
-        self.chat_box.tag_configure("system", foreground="#6666ff")
+        self.chat_box.tag_configure("system", foreground="#66f")
+        self.chat_box.tag_configure("highlight", background="#66f", foreground="#000")
         
-        self.input_box = Text(master, wrap=WORD, height=1, fg="#555", bg="#000", font=("Arial", 14))
-        self.input_box.config(insertbackground="#975")
+        self.input_box = Text(master, wrap=WORD, height=1, fg="#555", bg="#000", font=("Arial", 14), insertbackground="#975")
+        self.input_box.bind("<FocusIn>", lambda event, box=self.input_box: self.toggle_bg_colour(box, event))
+        self.input_box.bind("<FocusOut>", lambda event, box=self.input_box: self.toggle_bg_colour(box, event))
         self.input_box.grid(row=1, column=0, sticky=N+S+E+W, padx=self.border_size, pady=(0,self.border_size))
-        self.toggle_input()
+        self.input_box.focus_set()
+        self.selected_box = self.input_box
 
-        # keyboard shortcuts
+        # KEYBOARD SHORTCUTS
         self.input_box.bind("<Shift-Return>", self.input_newline)
         self.input_box.bind("<Return>", self.send_message)
         self.input_box.bind("<KeyRelease>", self.resize_input)
-        master.bind('<Control-e>', self.toggle_input)
+        master.bind('<Control-e>', self.toggle_box_focus)
+        master.bind('<Control-f>', self.find_string)
+        master.bind('<Control-h>', self.history_filter)
         master.bind('<F5>', self.new_conversation)
-        master.bind('<Control-f>', self.filter_history)
 
         master.option_add('*Menu*activeBackground', '#333')
         master.option_add('*Menu*activeForeground', '#975')
@@ -68,12 +72,20 @@ class ChatBot:
         self.save_history()
         self.master.after(0, self.update_display)
 
-    def toggle_input(self, event=None):
-        if self.input_focus == True:
-            self.input_box.focus_set()
-        else:
+    def toggle_bg_colour(self, box, event=None):
+        if event.type == "9": 
+            box.config(background="#111")
+            self.selected_box = box
+        elif event.type == "10": 
+            box.config(background="#000")
+
+    def toggle_box_focus(self, event=None):
+        if self.selected_box == self.input_box:
+            self.selected_box = self.chat_box
             self.chat_box.focus_set()
-        self.input_focus = not self.input_focus
+        elif self.selected_box == self.chat_box:
+            self.selected_box = self.input_box
+            self.input_box.focus_set()
         
     def resize_input(self, event=None):
         num_lines = int(self.input_box.index('end-1c').split('.')[0])
@@ -142,9 +154,30 @@ class ChatBot:
             elif role == "assistant":
                 self.chat_box.insert(END, f"\n\n{content}", "bot")
         self.chat_box.config(state=DISABLED)
+        self.chat_box.see(END)
 
-    def filter_history(self, event=None):
-        query = simpledialog.askstring("Filter History", "String:")
+    # CTRL-F
+    def find_string(self, event=None):
+        query = simpledialog.askstring("Find String", "")
+        if query:
+            index = "1.0"
+            first_match_index = None
+            while True:
+                index = self.chat_box.search(query, index, nocase=True, stopindex=END)
+                if not index:
+                    break
+                end_index = f"{index}+{len(query)}c"
+                self.chat_box.tag_add("highlight", index, end_index)
+                if first_match_index is None:
+                    first_match_index = index
+                index = end_index
+            if first_match_index is not None:
+                self.chat_box.see(first_match_index)
+
+    # CTRL-H
+    # searches json files for a string
+    def history_filter(self, event=None):
+        query = simpledialog.askstring("History Filter", "")
         if query:
             matching_files = get_files(f'{os.getcwd()}/history', query)
             if matching_files:
