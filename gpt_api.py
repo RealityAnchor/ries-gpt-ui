@@ -1,6 +1,6 @@
 import openai
 
-def GPT(engine, history):
+def call(engine, history):
     return openai.ChatCompletion.create(
         model = engine,
         messages = history

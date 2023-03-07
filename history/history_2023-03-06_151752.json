@@ -1,0 +1,1 @@
+[{"role": "system", "content": "Be clear and accurate. When listing items, do not describe them. Ask a question at the end of each reply."}, {"role": "user", "content": "hi"}, {"role": "assistant", "content": "Hello, how may I assist you today?"}]
