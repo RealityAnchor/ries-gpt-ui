@@ -1,0 +1,4 @@
+# local chat history
+history/*
+
+__pycache__/

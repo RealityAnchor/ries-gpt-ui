@@ -9,7 +9,7 @@ import json
 import os
 import re
 
-class ChatBot:
+class ChatGUI:
     def __init__(self, master):
         self.master = master
         master.title("ChatGPT")
@@ -33,6 +33,7 @@ class ChatBot:
         self.thread_box.tag_configure("bot", foreground="#975")
         self.thread_box.tag_configure("system", foreground="#66f")
         self.thread_box.tag_configure("highlight", background="#66f", foreground="#000")
+        self.thread_box.tag_configure("error", foreground="#f00")
 
         self.input_box = Text(master, wrap=WORD, height=1, fg="#888", bg="#000", font=("Arial", 14), insertbackground="#888", undo=True)
         self.input_box.bind("<FocusIn>", lambda event, box=self.input_box: self.toggle_bg_colour(box, event))
@@ -68,12 +69,18 @@ class ChatBot:
         self.new_conversation()
 
     def gpt_call(self, engine, history):
-        response = gpt_api.call(engine, history)
-        out_content = response["choices"][0]["message"]["content"]
-        re_tokens = response["usage"]["total_tokens"]
-        self.history.append({"role": "assistant", "content": out_content})
-        self.save_file()
-        self.master.after(0, self.update_display)
+        try:
+            response = gpt_api.call(engine, history)
+            out_content = response["choices"][0]["message"]["content"]
+            re_tokens = response["usage"]["total_tokens"]
+            self.history.append({"role": "assistant", "content": out_content})
+            self.save_file()
+            self.master.after(0, self.update_display)
+        except Exception as error_message:
+            self.thread_box.config(state=NORMAL)
+            self.thread_box.insert(END, f'\n\n{error_message}', "error")
+            self.thread_box.config(state=DISABLED)
+            self.thread_box.see(END)
 
     # Return
     def send_message(self, event=None):
@@ -235,7 +242,3 @@ class ChatBot:
         self.menu.delete(0, END)
         self.menu.add_cascade(label=f"History ({history_count})", menu=self.history_menu)
         self.menu.add_cascade(label=f"Favourites ({fav_count})", menu=self.fav_menu)
-
-root = Tk()
-my_gui = ChatBot(root)
-root.mainloop()
