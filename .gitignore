@@ -1,4 +1,7 @@
 # local chat history
 history/*
 
+# shortcut
+ChatGPT GUI.lnk
+
 __pycache__/

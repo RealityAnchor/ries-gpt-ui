@@ -9,78 +9,65 @@ import json
 import os
 import re
 
-class ChatGUI:
-    def __init__(self, master):
-        self.master = master
-        master.title("ChatGPT")
-        master.state("zoomed")
-        master.configure(bg="#222")
+class MainWindow(Tk):
+    def __init__(self):
+        super().__init__()
+        self.title("ChatGPT")
+        self.state("zoomed")
+        self.configure(bg="#222")
 
-        self.preprompt = "Be clear and accurate. When listing items, do not describe them. When writing code, include only the lines you add, delete, or change."
+        self.preprompt = "Be helpful. Anticipate my wants and needs. Introduce useful ideas I seem to be unaware of."
         self.engine = "gpt-3.5-turbo"
         self.history = [{"role": "system", "content": self.preprompt}]
         self.encoding = tiktoken.encoding_for_model(self.engine)
         self.max_tokens = 3000 # 4096 - max_tokens = floor of maximum response length
+        self.slice_index = 0 # only messages below blue line included in API call
         self.timestamp = datetime.now().strftime('%Y-%m-%d_%H%M%S')
         self.filename = self.timestamp
         
         self.border_size = 8
-        self.thread_box = Text(master, wrap=WORD, fg="#555", bg="#000", font=("Arial", 14), state=DISABLED)
+        self.thread_box = Text(self, wrap=WORD, fg="#555", bg="#000", font=("Arial", 14), state=DISABLED)
         self.thread_box.bind("<FocusIn>", lambda event, box=self.thread_box: self.toggle_bg_colour(box, event))
         self.thread_box.bind("<FocusOut>", lambda event, box=self.thread_box: self.toggle_bg_colour(box, event))
         self.thread_box.grid(row=0, column=0, sticky=N+S+E+W, padx=self.border_size, pady=self.border_size)
         self.thread_box.tag_configure("user", foreground="#555")
         self.thread_box.tag_configure("bot", foreground="#975")
         self.thread_box.tag_configure("system", foreground="#66f")
-        self.thread_box.tag_configure("highlight", background="#66f", foreground="#000")
+        self.thread_box.tag_configure("highlight", background="#ff6", foreground="#000")
         self.thread_box.tag_configure("error", foreground="#f00")
-
-        self.input_box = Text(master, wrap=WORD, height=1, fg="#888", bg="#000", font=("Arial", 14), insertbackground="#888", undo=True)
+            
+        self.input_box = Text(self, wrap=WORD, height=1, fg="#888", bg="#000", font=("Arial", 14), insertbackground="#888", undo=True)
         self.input_box.bind("<FocusIn>", lambda event, box=self.input_box: self.toggle_bg_colour(box, event))
         self.input_box.bind("<FocusOut>", lambda event, box=self.input_box: self.toggle_bg_colour(box, event))
         self.input_box.grid(row=1, column=0, sticky=N+S+E+W, padx=self.border_size, pady=(0,self.border_size))
         self.input_box.focus_set()
         
-        master.grid_columnconfigure(0, weight=1)
-        master.grid_rowconfigure(0, weight=1)
-        master.grid_rowconfigure(1, weight=0)
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=0)
 
         # KEYBOARD SHORTCUTS
         self.input_box.bind("<Return>", self.send_message)
         self.input_box.bind("<Shift-Return>", self.input_newline)
         self.input_box.bind("<KeyRelease>", self.resize_input)
-        master.bind('<Control-e>', self.toggle_box_focus)
-        master.bind('<Control-f>', self.find_string)
-        master.bind('<Control-h>', self.history_filter)
-        master.bind('<Control-s>', self.rename_thread)
-        master.bind('<F5>', self.new_conversation)
-        master.bind('<F11>', self.toggle_fullscreen)
+        self.bind('<Control-e>', self.toggle_box_focus)
+        self.bind('<Control-f>', self.find_string)
+        self.bind('<Control-h>', self.history_filter)
+        self.bind('<Control-s>', self.rename_thread)
+        self.bind('<F5>', self.new_conversation)
+        self.bind('<F11>', self.toggle_fullscreen)
 
-        master.option_add('*Menu*activeBackground', '#333')
-        master.option_add('*Menu*activeForeground', '#975')
-        master.option_add('*Menu*background', '#000')
-        master.option_add('*Menu*foreground', '#975')
+        self.option_add('*Menu*activeBackground', '#333')
+        self.option_add('*Menu*activeForeground', '#975')
+        self.option_add('*Menu*background', '#000')
+        self.option_add('*Menu*foreground', '#975')
 
-        self.menu = Menu(master, background='#333', foreground='#FFF', activebackground='#555', activeforeground='#FFF')
-        self.history_menu = Menu(master, background='#333', foreground='#FFF', activebackground='#555', activeforeground='#FFF', tearoff=0)
-        self.fav_menu = Menu(master, background='#333', foreground='#FFF', activebackground='#555', activeforeground='#FFF', tearoff=0)
-        master.config(menu=self.menu)
-        
+        self.menu = Menu(self, background='#333', foreground='#FFF', activebackground='#555', activeforeground='#FFF')
+        self.history_menu = Menu(self, background='#333', foreground='#FFF', activebackground='#555', activeforeground='#FFF', tearoff=0)
+        self.fav_menu = Menu(self, background='#333', foreground='#FFF', activebackground='#555', activeforeground='#FFF', tearoff=0)
+        self.config(menu=self.menu)
+
         self.new_conversation()
-
-    def gpt_call(self, engine, history):
-        try:
-            response = gpt_api.call(engine, history)
-            out_content = response["choices"][0]["message"]["content"]
-            re_tokens = response["usage"]["total_tokens"]
-            self.history.append({"role": "assistant", "content": out_content})
-            self.save_file()
-            self.master.after(0, self.update_display)
-        except Exception as error_message:
-            self.thread_box.config(state=NORMAL)
-            self.thread_box.insert(END, f'\n\n{error_message}', "error")
-            self.thread_box.config(state=DISABLED)
-            self.thread_box.see(END)
 
     # Return
     def send_message(self, event=None):
@@ -91,17 +78,30 @@ class ChatGUI:
         self.history.append({"role": "user", "content": in_content})
         self.save_file()
         self.update_display()
+        t = threading.Thread(target=self.invoke_gpt, args=(self.engine, self.history[self.slice_index:]))
+        t.start()
+        return "break"
 
-        # slice oldest messages from overly long threads
+    def invoke_gpt(self, engine, history):
+        try:
+            response = gpt_api.call(engine, history)
+            out_content = response["choices"][0]["message"]["content"]
+            re_tokens = response["usage"]["total_tokens"]
+            self.history.append({"role": "assistant", "content": out_content})
+            self.save_file()
+            self.after(0, self.update_display)
+        except Exception as error_message:
+            self.thread_box.config(state=NORMAL)
+            self.thread_box.insert(END, f'\n\n{error_message}', "error")
+            self.thread_box.config(state=DISABLED)
+            self.thread_box.see(END)
+
+    # returns index 
+    def get_slice_index(self):
         token_lengths = [len(self.encoding.encode(entry["content"])) for entry in self.history]
         while sum(token_lengths) > self.max_tokens:
             token_lengths.pop(0)
-        n = len(token_lengths)
-        sliced_history = self.history[-n:]
-
-        t = threading.Thread(target=self.gpt_call, args=(self.engine, sliced_history))
-        t.start()
-        return "break"
+        return len(self.history) - len(token_lengths)
 
     # Shift-Return
     def input_newline(self, event=None):
@@ -110,7 +110,7 @@ class ChatGUI:
 
     # Ctrl-E
     def toggle_box_focus(self, event=None):
-        if self.master.focus_get() == self.input_box:
+        if self.focus_get() == self.input_box:
             self.thread_box.focus_set()
         else:
             self.input_box.focus_set()
@@ -141,6 +141,7 @@ class ChatGUI:
             matching_filenames = get_filenames(f'history', query)
             if matching_filenames:
                 self.populate_history(matching_filenames)
+                self.find_string
         else:
             self.populate_history(self.json_files)
             
@@ -174,7 +175,7 @@ class ChatGUI:
 
     # F11
     def toggle_fullscreen(self, event=None):
-        self.master.attributes('-fullscreen', not self.master.attributes('-fullscreen'))
+        self.attributes('-fullscreen', not self.attributes('-fullscreen'))
 
     # Key-Release
     def resize_input(self, event=None):
@@ -190,7 +191,7 @@ class ChatGUI:
 
     def update_title(self, filename):
         file_size = round(os.path.getsize(f'history/{filename}.json') / 1024, 1)
-        self.master.title(f"{filename} ({file_size} KB)")
+        self.title(f"{filename} ({file_size} KB)")
 
     def save_file(self):
         with open(f'history/{self.filename}.json', 'w') as f:
@@ -208,21 +209,6 @@ class ChatGUI:
 
     def load_json_filenames(self, directory):
         return [file for file in os.listdir(f'{directory}/') if file.endswith(".json")]
-
-    def update_display(self):
-        self.thread_box.config(state=NORMAL)
-        self.thread_box.delete("1.0", END)
-        for entry in self.history:
-            role = entry["role"]
-            content = entry["content"]
-            if role == "system":
-                self.thread_box.insert(END, f"{content}", "system")
-            elif role == "user":
-                self.thread_box.insert(END, f"\n\n{content}", "user")
-            elif role == "assistant":
-                self.thread_box.insert(END, f"\n\n{content}", "bot")
-        self.thread_box.config(state=DISABLED)
-        self.thread_box.see(END)
 
     def populate_history(self, filename_list):
         self.history_menu.delete(0, END)
@@ -242,3 +228,26 @@ class ChatGUI:
         self.menu.delete(0, END)
         self.menu.add_cascade(label=f"History ({history_count})", menu=self.history_menu)
         self.menu.add_cascade(label=f"Favourites ({fav_count})", menu=self.fav_menu)
+
+    def update_display(self):
+        self.thread_box.config(state=NORMAL)
+        self.thread_box.delete("1.0", END)
+        self.slice_index = self.get_slice_index()
+        for entry in self.history:
+            role = entry["role"]
+            content = entry["content"]
+            if self.history.index(entry) == self.slice_index:
+                self.thread_box.insert(END, "\n")
+                self.thread_box.window_create("end", window=Canvas(self.thread_box, width=self.thread_box.winfo_width(), height=1, bg="#66f", highlightthickness=0))
+            if role == "system":
+                self.thread_box.insert(END, f"{content}", "system")
+            elif role == "user":
+                self.thread_box.insert(END, f"\n\n{content}", "user")
+            elif role == "assistant":
+                self.thread_box.insert(END, f"\n\n{content}", "bot")
+        self.thread_box.config(state=DISABLED)
+        self.thread_box.see(END)
+
+if __name__ == "__main__":
+    root = MainWindow()
+    root.mainloop()

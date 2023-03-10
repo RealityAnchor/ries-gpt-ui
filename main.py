@@ -1,6 +1,4 @@
-from tkinter import Tk
-from chat_gui import ChatGUI
+from main_window import MainWindow
 
-root = Tk()
-chatbot = ChatGUI(root)
+root = MainWindow()
 root.mainloop()
