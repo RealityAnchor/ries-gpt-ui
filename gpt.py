@@ -1,14 +1,17 @@
 import openai
 import os
 
+# this file is separated because ChatGPT's 2021 training data cutoff does not include new ChatCompletion formatting
+# the API call is hidden here to prevent ChatGPT from trying to replace it with openai.Completion.create
 def api_call(engine, history):
     return openai.ChatCompletion.create(
         model = engine,
         messages = history
         )
 
+# very simple console testing
+# breaks when thread becomes too large (4096 tokens)
 if __name__ == "__main__":
-    print(openai.api_key)
     preprompt = input("Preprompt: ") or "Be helpful."
     history = [{"role": "system", "content": preprompt}]
     engine = "gpt-3.5-turbo"
