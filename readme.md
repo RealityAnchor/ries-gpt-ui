@@ -1,11 +1,13 @@
 # GPT Desktop Chatbot
 
-Python chatbox interface made using tkinter and OpenAI API as an alternative to chat.openai.com. Currently uses gpt-3.5-turbo model.
+tkinter desktop chat interface for interacting with GPT-3 via OpenAI's API
 
 ## Author
 
 Adam Ries
+
 Calgary, Alberta, Canada
+
 adamalexanderries{}gmail{}com
 
 ## Features
@@ -17,24 +19,21 @@ adamalexanderries{}gmail{}com
 ## Setup
 
 Dependencies based on older versions because I'm a dinosaur still using Windows 7.
+
 Python 3.8.0
+
 OpenAI 0.27.0
+
 TikToken 0.3.0
 
 Set OPENAI_API_KEY in your environment variables.
 
 [Get an API key here.](https://platform.openai.com/account/api-keys)
 
-## License
-
-MIT?
-
 ## Project Directory
 
-### main.py
-- run this to start the interface
-
 ### main_window.py
+- run this to use program
 - three dropdown menus
   - `Preprompts` to select system message (not saved with thread)
   - `Saved` and `History` to load old threads
@@ -67,13 +66,11 @@ MIT?
 ### preprompts.json
 - inserted in each API call as `"role": "system"`
 - edit preprompts manually for now (notepad++, VS Code, etc.)
-| Title | Prompt |
-|-------|--------|
-| Default | Be accurate, detailed, and clear. Predict my needs. |
-| Coder | You are a senior software developer and mentor. I am a novice developer and student. |
-| Socrates | Reply in the Socratic style. Do not provide answers. Instead, patiently and methodically ask questions such that curious minds may lead themselves to truth and wisdom. When appropriate you may break down topics into ever-finer detail, or broaden the scope, or make insightful lateral leaps. |
-| Cthulu | Reply in horrific Lovecraftian style. You are an eldritch god, whose words are dredged from an unfathomable cosmic abyss. |
-| Poet | Write beautifully and metaphorically. |
+  - Default | Be accurate, detailed, and clear. Predict my needs.
+  - Coder | You are a senior software developer and mentor. I am a novice developer and student.
+  - Socrates | Reply in the Socratic style. Do not provide answers. Instead, patiently and methodically ask questions such that curious minds may lead themselves to truth and wisdom. When appropriate you may break down topics into ever-finer detail, or broaden the scope, or make insightful lateral leaps.
+  - Cthulu | Reply in horrific Lovecraftian style. You are an eldritch god, whose words are dredged from an unfathomable cosmic abyss.
+  - Poet | Write beautifully and metaphorically.
 
 ## Hotkeys
 
@@ -87,3 +84,7 @@ MIT?
 With input box focused
   `Return` send message
   `Shift-Return` inserts newline without sending message
+
+## License
+
+MIT
