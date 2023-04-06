@@ -1,3 +1,10 @@
+'''
+main_window.py
+Adam Ries, adamalexanderries{}gmail{}com
+2023-04-06
+tkinter desktop chat interface for interacting with GPT-3 via OpenAI's API
+'''
+
 # built in
 from datetime import datetime
 import json

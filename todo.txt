@@ -2,13 +2,13 @@ Features
   slice messages partway through if over 3k tokens
   go to bottom of input_box when pasting long messages
   re-implement counting menu items
-  help button
+  help button ctrl-h
   ctrl-up/down, snap to prompts, up-down always navigate one line
   when output arrives, .see to answer start
   responsive web design for phone/desktop online app
   Whisper/elevenlabs for speech i/o
   blank string message = resend last message
-  ctrl+n new tab, ctrl+left/right tab switching
+  ctrl-n new tab, ctrl-left/right tab switching
   token limit
     3-way toggle prompt/response pairs to force-include, force-disclude, or be ambivalent
   code editing mode
