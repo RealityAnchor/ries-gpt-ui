@@ -75,14 +75,21 @@ Set OPENAI_API_KEY in your environment variables.
 ## Hotkeys
 
 `ctrl + e` toggle focus between input box and thread box
+
 `ctrl + f` toggle search window
+
 `ctrl + s` rename current thread
+
 `ctrl + w` close current window
+
 `f5` start a new conversation thread
+
 `f11` toggle fullscreen
 
-With input box focused
+With input box focused:
+
   `Return` send message
+  
   `Shift-Return` inserts newline without sending message
 
 ## License
