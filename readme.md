@@ -1,9 +1,7 @@
 # GPT Desktop Chatbot
-
 tkinter desktop chat interface for interacting with GPT-3 via OpenAI's API
 
 ## Author
-
 Adam Ries
 
 Calgary, Alberta, Canada
@@ -11,13 +9,11 @@ Calgary, Alberta, Canada
 adamalexanderries{}gmail{}com
 
 ## Features
-
 - saves conversations locally in `history/`
 - search feature `ctrl+f`
 - preprompt dropdown menu
 
 ## Setup
-
 Dependencies based on older versions because I'm a dinosaur still using Windows 7.
 
 Python 3.8.0
@@ -48,9 +44,13 @@ Set OPENAI_API_KEY in your environment variables.
 
 ### search_window.py
 - text input and search button
+
 `return` next match
+
 `ctrl + d` toggle search direction
+
 `ctrl + g` toggle searching in files
+
 `ctrl + f`, `esc` close window
 
 ### gpt.py
@@ -64,7 +64,7 @@ Set OPENAI_API_KEY in your environment variables.
 - rename current file with `ctrl+s`
 
 ### preprompts.json
-- inserted in each API call as `"role": "system"`
+- inserted in each API call as `"role" | "system"`
 - edit preprompts manually for now (notepad++, VS Code, etc.)
   - Default | Be accurate, detailed, and clear. Predict my needs.
   - Coder | You are a senior software developer and mentor. I am a novice developer and student.
@@ -73,7 +73,6 @@ Set OPENAI_API_KEY in your environment variables.
   - Poet | Write beautifully and metaphorically.
 
 ## Hotkeys
-
 `ctrl + e` toggle focus between input box and thread box
 
 `ctrl + f` toggle search window
@@ -88,10 +87,9 @@ Set OPENAI_API_KEY in your environment variables.
 
 With input box focused:
 
-  `Return` send message
+`Return` send message
   
-  `Shift-Return` inserts newline without sending message
+`Shift-Return` insert newline without sending message
 
 ## License
-
 MIT

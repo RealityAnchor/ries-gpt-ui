@@ -1,6 +1,6 @@
 Features
   slice messages partway through if over 3k tokens
-  go to bottom of input_box when pasting long messages
+  use grid instead of recalculating border for dynamic horizontal spacing
   re-implement counting menu items
   help button ctrl-h
   ctrl-up/down, snap to prompts, up-down always navigate one line
