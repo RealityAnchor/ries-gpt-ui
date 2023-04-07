@@ -29,6 +29,7 @@ Set OPENAI_API_KEY in your environment variables.
 ## Project Directory
 
 ### main_window.py
+![main_window](screenshots/main_window.png)
 - run this to use program
 - three dropdown menus
   - `Preprompts` to select system message (not saved with thread)
@@ -43,6 +44,7 @@ Set OPENAI_API_KEY in your environment variables.
   - blue horizontal line shows where **previous** API call sliced thread
 
 ### search_window.py
+![search_window](screenshots/search_window.png)
 - text input and search button
 
 `return` next match
@@ -58,12 +60,14 @@ Set OPENAI_API_KEY in your environment variables.
 - run this by itself for barebones interaction with chatbot in terminal
 
 ### history/
+![history menu](screenshots/history_menu.png)
 - conversations saved here as json files 
 - 2023-03-02_151106.json [{"role": "user", "content": "user input"}, {"role": "assistant", "content": "AI response"}, ...]
 - default title formatted with `datetime.now().strftime("%Y-%m-%d_%H%M%S")`
 - rename current file with `ctrl+s`
 
 ### preprompts.json
+![preprompts](screenshots/preprompts.png)
 - inserted in each API call as `"role" | "system"`
 - edit preprompts manually for now (notepad++, VS Code, etc.)
   - Default | Be accurate, detailed, and clear. Predict my needs.
