@@ -28,6 +28,7 @@ SearchWindow class
   clear search button
   label with query inside menu bar when searching files
   handle special characters in filenames (apostrophes, ...)
+  tag search field + content search field
   optimization
     stop file search after first match
   

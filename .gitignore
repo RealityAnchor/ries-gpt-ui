@@ -1,5 +1,5 @@
 # local chat history
-history/*
+history/*.json
 
 # shortcut
 ChatGPT GUI.lnk
