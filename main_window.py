@@ -155,14 +155,13 @@ class MainWindow(Tk):
             # messages above blue horizontal slice line were not sent in prior API call
             if self.history.index(entry) == self.slice_index:
                 self.thread_box.window_create("end", window=Canvas(self.thread_box, width=self.thread_box.winfo_width()-1, height=1, bg="#66f", highlightthickness=0))
-            if role == "assistant":
-                cur_message_index = self.thread_box.index(END)
             self.thread_box.insert(END, "\n\n---\n\n", "system") # triple dash for markdown formatting
+            cur_message_index = self.thread_box.index(END) # start index of most recent message
             self.thread_box.insert(END, f"{content}", role)
         extra_lines = "" if self.thread_box.index(END) == "2.0" else "\n\n" # no extra formmatting lines above prompt if thread empty
         self.thread_box.insert(END, f"{extra_lines}{self.prompt}", "prompt")
         self.thread_box.config(state=DISABLED) # disable editing text in thread_box
-        # move view to show beginning of most recent AI response
+        # move view to show beginning of most recent message
         self.thread_box.yview_moveto(int(cur_message_index.split('.')[0]) / int(self.thread_box.index(END).split('.')[0]))
         # self.thread_box.see(cur_message_index)
         

@@ -1,3 +1,5 @@
+Fix redundant language in social media preview
+
 Features
   slice messages partway through if over 3k tokens
   use grid instead of recalculating border for dynamic horizontal spacing

@@ -9,11 +9,11 @@ Calgary, Alberta, Canada
 adamalexanderries{}gmail{}com
 
 ## Features
-- 
-- autosaves threads locally in `history/`
+- thread autosaving in local `history/` folder
 - search current or all threads `ctrl-f`
 - manually rename conversations `ctrl-s`
 - preprompt dropdown menu
+- [keyboard controls](#hotkeys)
 
 ## Setup
 - Dependencies (older versions are for Windows 7 compatibility, because I'm a dinosaur)
@@ -46,7 +46,6 @@ adamalexanderries{}gmail{}com
 
 ### search_window.py
 ![search_window](screenshots/search_window.png)
-- text input and search button
 
 ### gpt.py
 - separated from main_window.py because it kept trying to correct itself after OpenAI changed [API formatting](https://platform.openai.com/docs/guides/chat) from `Completion` to `ChatCompletion` on 2023-03-01 with `gpt-3.5-turbo` release (due to 2021 training data cutoff)
