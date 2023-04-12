@@ -24,6 +24,7 @@ import gpt
 
 # main tkinter window
 class MainWindow(Tk):
+
     def __init__(self):
         super().__init__()
         self.engine = "gpt-3.5-turbo"
@@ -238,13 +239,16 @@ class MainWindow(Tk):
         new_filename = askstring("Rename Conversation", "")
         if new_filename:
             # check for duplicates
-            existing_files = [f.rsplit(".", 1)[0] for f in os.listdir("history")]
+            historydir = os.path.join(os.path.dirname(__file__),"history")
+            existing_files = [f.rsplit(".", 1)[0] for f in os.listdir(historydir)]
             i = 2 # duplicate_filename_2, _3, _4, ...
             while new_filename in existing_files:
                 new_filename = f"{new_filename.rsplit('_', 1)[0]}_{i}"
                 i += 1
             # rename file and update menu
-            os.rename(f"history/{old_filename}.json", f"history/{new_filename}.json")
+            filepathold = os.path.join(os.path.dirname(__file__),"history",old_filename)
+            filepathnew = os.path.join(os.path.dirname(__file__),"history",new_filename)
+            os.rename(f"{filepathold}.json", f"{filepathnew}.json")
             self.filename = new_filename
             self.save_file()
             self.filename_list = self.get_history_filenames("history", ".json")
@@ -262,16 +266,20 @@ class MainWindow(Tk):
         self.update_thread_box()
 
     def update_title(self, filename):
-        file_size = round(os.path.getsize(f"history/{filename}.json") / 1024, 1)
+        filepath = os.path.join(os.path.dirname(__file__),"history",filename)
+        file_size = round(os.path.getsize(f"{filepath}.json") / 1024, 1)
         self.title(f"{filename} ({file_size} KB)") # tkinter window title
 
     def save_file(self):
-        with open(f"history/{self.filename}.json", "w") as f:
+        filepath = os.path.join(os.path.dirname(__file__),"history",self.filename)
+        with open(f"{filepath}.json", "w") as f:
             json.dump(self.history, f)
         self.update_title(self.filename)
 
     def load_file(self, filename):
-        with open(f"history/{filename}.json", "r") as f:
+        dirname = os.path.dirname(__file__)
+        filepath = os.path.join(dirname, 'history',filename)
+        with open(f"{filepath}.json", "r") as f:
             self.history = json.load(f)
         self.filename_list = self.get_history_filenames("history", ".json")
         self.filename = filename
@@ -283,7 +291,9 @@ class MainWindow(Tk):
     #----------------#
 
     def get_preprompts(self, prompt_file):
-        with open(prompt_file, "r") as f:
+        dirname = os.path.dirname(__file__)
+        filename = os.path.join(dirname, prompt_file)
+        with open(filename, "r") as f:
             data = json.load(f)
         prompts = {}
         prompts["default"] = {
@@ -326,7 +336,8 @@ class MainWindow(Tk):
     #--------------#
 
     def get_history_filenames(self, directory, ext):
-        filenames = os.listdir(f"{directory}/")
+        dirname = os.path.dirname(__file__)
+        filenames = os.listdir(f"{os.path.join(dirname,directory)}/")
         # include only filenames with correct extension
         out_filenames = sorted([f.rsplit(".", 1)[0] for f in filenames if f.endswith(ext)], reverse=True)
         return out_filenames
@@ -335,8 +346,11 @@ class MainWindow(Tk):
         self.menu.delete("Saved")
         self.menu.delete("History")
         self.save_menu.delete(0, END)
+        dirname = os.path.dirname(__file__)
         for filename in filenames:
-            file_size = round(os.path.getsize(f"history/{filename}.json") / 1024, 1)
+            historyfolder = "history"
+            filepath = f"{os.path.join(dirname,historyfolder,filename)}.json"
+            file_size = round(os.path.getsize(filepath) / 1024, 1)
             if re.match(r"\d{4}-\d{2}-\d{2}_\d{6}", filename): # yyyy-mm-dd_hhmmss default filename
                 cur_menu = self.history_menu
             else: # custom filename
@@ -371,5 +385,5 @@ class MainWindow(Tk):
 
 if __name__ == "__main__":
     root = MainWindow()
-    root.iconbitmap("icon.ico")
+    root.iconbitmap(os.path.join(os.path.dirname(__file__),"icon.ico"))
     root.mainloop()
