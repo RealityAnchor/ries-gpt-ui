@@ -161,7 +161,6 @@ class MainWindow(Tk):
             preprompt_length = 0
         while sum(thread_tokens) + preprompt_length > self.max_tokens:
             thread_tokens.pop(0)
-        print(f"{thread_tokens} + {preprompt_length} ({sum(thread_tokens)+preprompt_length})")
         if len(thread_tokens) < len(self.history):
             self.history_slice_index = len(self.history) - len(thread_tokens) - 1
             tokenized_msg = self.encoding.encode(self.history[self.history_slice_index]["content"])
@@ -221,7 +220,7 @@ class MainWindow(Tk):
         if not self.search_window_attributes: # set default attributes
             self.search_window_attributes["position"] = f"+{int(self.winfo_rootx() + self.winfo_width() / 2)}+{int(self.winfo_rooty() + self.winfo_height() / 2)}" # center window
             self.search_window_attributes["history"] = False # search only in this file
-            self.search_window_attributes["backwards"] = False # search forwards
+            self.search_window_attributes["backwards"] = True # search forwards
             self.search_window_attributes["query"] = "" # empty search string
         if self.search_window: # do not make new search window if one already exists
             self.search_window.search_entry.focus_set()
@@ -295,7 +294,8 @@ class MainWindow(Tk):
     #----------------#
 
     def set_preprompt(self, title="Default"):
-        with open("preprompts.json") as f:
+        dirname = os.path.dirname(__file__)
+        with open(os.path.join(dirname, "preprompts.json"), "r") as f:
             pp_data = json.load(f)
             pp_dict = {p['title']: p['prompt'] for p in pp_data}
         if title == "Default":

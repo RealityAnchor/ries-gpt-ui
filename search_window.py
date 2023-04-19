@@ -29,7 +29,7 @@ class SearchWindow(Toplevel):
         else: # redundant with default attribute settings in MainWindow
             self.geometry("+100+100")
             self.search_history.set(False)
-            self.search_backwards.set(False)
+            self.search_backwards.set(True)
 
         self.search_entry.bind("<Return>", self.increment_search)
         self.bind("<Control-g>", lambda event: self.toggle_search_history())
