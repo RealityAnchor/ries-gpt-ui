@@ -30,8 +30,10 @@ class MainWindow(Tk):
         self.title(self.engine)
         self.state("zoomed")
         self.configure(bg="#080808") # dark grey background
-        self.prompt_list = self.get_preprompts("preprompts.json")
-        self.prompt = self.prompt_list["default"]["prompt"]
+        with open("preprompts.json") as f:
+            pp_data = json.load(f)
+            self.preprompt_list = {p['title']: p['prompt'] for p in pp_data}
+        self.preprompt = None
         self.history = []
 
         # tokenization is done to measure thread length
@@ -39,7 +41,8 @@ class MainWindow(Tk):
         # long threads are sliced to allow for at least 1000 response tokens
         self.encoding = tiktoken.encoding_for_model(self.engine)
         self.max_tokens = 3096
-        self.slice_index = 0
+        self.history_slice_index = 0
+        self.slice_token_index = 0
 
         # default thread title set to current date and time yyyy-mm-dd_hhmmss
         self.timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
@@ -100,16 +103,17 @@ class MainWindow(Tk):
         self.option_add("*Menu*background", "#000")
         self.option_add("*Menu*foreground", "#975")
         self.menu = Menu(self, background="#333", foreground="#FFF", activebackground="#555", activeforeground="#FFF")
-        self.prompt_menu = Menu(self, background="#333", foreground="#FFF", activebackground="#555", activeforeground="#FFF", tearoff=0)
+        self.preprompt_menu = Menu(self, background="#333", foreground="#FFF", activebackground="#555", activeforeground="#FFF", tearoff=0)
         self.history_menu = Menu(self, background="#333", foreground="#FFF", activebackground="#555", activeforeground="#FFF", tearoff=0)
         self.save_menu = Menu(self, background="#333", foreground="#FFF", activebackground="#555", activeforeground="#FFF", tearoff=0)  
-        self.menu.add_cascade(label="Preprompts", menu=self.prompt_menu)
+        self.menu.add_cascade(label="Preprompts", menu=self.preprompt_menu)
         self.menu.add_cascade(label="Saved", menu=self.save_menu)
         self.menu.add_cascade(label="History", menu=self.history_menu)
         self.config(menu=self.menu)
         
         self.update()
         self.new_conversation()
+        self.set_preprompt()
 
     #-----------#
     # Messaging #
@@ -124,15 +128,17 @@ class MainWindow(Tk):
         self.update_thread_box()
         # make GPT API call to OpenAI with current message thread
         # multithreading so that program doesn't freeze while waiting for response
-        t = threading.Thread(target=self.invoke_gpt, args=(self.engine, self.history[self.slice_index:]))
+        t = threading.Thread(target=self.invoke_gpt, args=(self.engine, self.history[self.history_slice_index:]))
         t.start()
         return "break" # no newline character
 
     def invoke_gpt(self, engine, history):
         try:
-            history.insert(-1, {"role": "system", "content": self.prompt}) # preprompt included as last message
+            if self.preprompt:
+                history.insert(-1, {"role": "system", "content": self.preprompt}) # preprompt included as last message
             response = gpt.api_call(engine, history) # using ChatCompletion
-            history.pop(-1) # preprompt removed (not included in history)
+            if self.preprompt:
+                history.pop(-1) # preprompt removed (not included in history)
             out_content = response["choices"][0]["message"]["content"]
             self.history.append({"role": "assistant", "content": out_content})
             self.save_file()
@@ -147,30 +153,36 @@ class MainWindow(Tk):
     def update_thread_box(self):
         self.thread_box.config(state=NORMAL) # enable editing text in thread_box
         self.thread_box.delete("1.0", END)
-        self.slice_index = self.get_slice_index()
         cur_message_index = "0.0"
-        for entry in self.history:
-            role = entry["role"]
-            content = entry["content"]
-            # messages above blue horizontal slice line were not sent in prior API call
-            if self.history.index(entry) == self.slice_index:
-                self.thread_box.window_create("end", window=Canvas(self.thread_box, width=self.thread_box.winfo_width()-1, height=1, bg="#66f", highlightthickness=0))
+        thread_tokens = [len(self.encoding.encode(entry["content"])) for entry in self.history]
+        if self.preprompt:
+            preprompt_length = len(self.encoding.encode(self.preprompt))
+        else:
+            preprompt_length = 0
+        while sum(thread_tokens) + preprompt_length > self.max_tokens:
+            thread_tokens.pop(0)
+        print(f"{thread_tokens} + {preprompt_length} ({sum(thread_tokens)+preprompt_length})")
+        if len(thread_tokens) < len(self.history):
+            self.history_slice_index = len(self.history) - len(thread_tokens) - 1
+            tokenized_msg = self.encoding.encode(self.history[self.history_slice_index]["content"])
+            spare_tokens = self.max_tokens - preprompt_length - sum(thread_tokens)
+            self.slice_token_index = len(tokenized_msg) - spare_tokens
+        for i, entry in enumerate(self.history):
             self.thread_box.insert(END, "\n\n---\n\n", "system") # triple dash for markdown formatting
-            cur_message_index = self.thread_box.index(END) # start index of most recent message
-            self.thread_box.insert(END, f"{content}", role)
+            if i == self.history_slice_index:
+                self.thread_box.insert(END, f"{entry['content'][:self.slice_token_index]}", entry["role"])
+                self.thread_box.insert(END, "|", "system")
+                self.thread_box.insert(END, f"{entry['content'][self.slice_token_index:]}", entry["role"])
+            else:
+                self.thread_box.insert(END, f"{entry['content']}", entry["role"])
+        cur_message_index = self.thread_box.index(END) # start index of most recent message
         extra_lines = "" if self.thread_box.index(END) == "2.0" else "\n\n" # no extra formmatting lines above prompt if thread empty
-        self.thread_box.insert(END, f"{extra_lines}{self.prompt}", "prompt")
+        if self.preprompt:
+            self.thread_box.insert(END, f"{extra_lines}{self.preprompt}", "prompt")
         self.thread_box.config(state=DISABLED) # disable editing text in thread_box
         # move view to show beginning of most recent message
         self.thread_box.yview_moveto(int(cur_message_index.split('.')[0]) / int(self.thread_box.index(END).split('.')[0]))
         # self.thread_box.see(cur_message_index)
-        
-    # slice long threads before API call
-    def get_slice_index(self):
-        token_lengths = [len(self.encoding.encode(entry["content"])) for entry in self.history]
-        while sum(token_lengths) + len(self.prompt) > self.max_tokens:
-            token_lengths.pop(0)
-        return len(self.history) - len(token_lengths)
 
     # Shift-Return
     def input_newline(self, event=None):
@@ -282,44 +294,30 @@ class MainWindow(Tk):
     # Preprompt menu #
     #----------------#
 
-    def get_preprompts(self, prompt_file):
-        with open(prompt_file, "r") as f:
-            data = json.load(f)
-        prompts = {}
-        prompts["default"] = {
-            "title": data["default"]["title"],
-            "prompt": data["default"]["prompt"]
-        }
-        custom_prompts = []
-        for p in data["custom"]:
-            custom_prompts.append({"title": p["title"], "prompt": p["prompt"]})
-        prompts["custom"] = custom_prompts
-        return prompts
-    
-    def set_prompt(self, title="Default"):
-        for p in self.prompt_list["custom"]:
-            if p["title"] == title:
-                self.prompt = p["prompt"]
-                break
+    def set_preprompt(self, title="Default"):
+        with open("preprompts.json") as f:
+            pp_data = json.load(f)
+            pp_dict = {p['title']: p['prompt'] for p in pp_data}
         if title == "Default":
-            self.prompt = self.prompt_list["default"]["prompt"]
+            self.preprompt = None
+        else:    
+            self.preprompt = pp_dict[title]
         self.thread_box.tag_remove("prompt", "1.0", END)
-        self.thread_box.insert(END, f"\n\n{self.prompt}", "prompt")
-        for i in range(self.prompt_menu.index(END) + 1):
-            self.prompt_menu.entryconfig(i, label=self.prompt_menu.entrycget(i, "label").replace("> ", ""))
-        self.prompt_menu.entryconfig(title, label="> " + title) # point to current prompt in menu
+        self.thread_box.insert(END, f"\n\n{self.preprompt}", "prompt")
+        for i in range(self.preprompt_menu.index(END) + 1):
+            self.preprompt_menu.entryconfig(i, label=self.preprompt_menu.entrycget(i, "label").replace("> ", ""))
+        self.preprompt_menu.entryconfig(title, label="> " + title) # point to current prompt in menu
         self.update_thread_box()
 
     def populate_prompt_menu(self):
         self.menu.delete("Preprompts")
-        self.prompt_menu.delete(0, END)
-        cur_menu = self.prompt_menu
-        cur_menu.add_command(label="Default", command=lambda: self.set_prompt()) # set default prompt on click
-        for p in self.prompt_list["custom"]:
-            title = p["title"]
-            prompt = p["prompt"]
-            cur_menu.add_command(label=title, command=lambda t=title: self.set_prompt(t)) # set custom prompt on click
-        self.menu.add_cascade(label="Preprompts", menu=self.prompt_menu)
+        self.preprompt_menu.delete(0, END)
+        cur_menu = self.preprompt_menu
+        cur_menu.add_command(label="Default", command=lambda: self.set_preprompt()) # set default prompt on click
+        for k,v in self.preprompt_list.items():
+            title = k
+            cur_menu.add_command(label=title, command=lambda t=title: self.set_preprompt(t)) # set custom prompt on click
+        self.menu.add_cascade(label="Preprompts", menu=self.preprompt_menu)
 
     #--------------#
     # History menu #
