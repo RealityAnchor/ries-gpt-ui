@@ -16,11 +16,14 @@ Features
   code editing mode
     code-specific preprompt
     read code from file, always send as first message
+    codex model "handles whitespace more efficiently"
   add preprompt and timestamp to history json files
   options json file?
   drag inner window to adjust width or toggle narrow/wide for reading/coding
   field to set API key within app
   custom keybinds, options (json?)
+  lock vertical position toggle
+  copy button beside responses and/or codeblocks
   
 GPT-4
   image input
