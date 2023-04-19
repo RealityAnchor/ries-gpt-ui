@@ -1,4 +1,5 @@
 Fix redundant language in social media preview
+Update history menu without restarting
 
 Features
   slice messages partway through if over 3k tokens
@@ -45,6 +46,7 @@ PromptEditor class
     edit/create
 
 Sorting conversations
+  "chapters" in left column, numbered by prompt-response pair
   delete, hide, click-drag
   saved files by recently-edited first
   collapse/expand responses
