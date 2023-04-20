@@ -32,10 +32,6 @@ class MainWindow(Tk):
         self.state("zoomed")
         self.minsize(500, 500)
         self.configure(bg="#040404") # dark grey background
-        with open("preprompts.json") as f:
-            pp_data = json.load(f)
-            self.pp_list = {p['title']: p['prompt'] for p in pp_data}
-        self.pp = None
         self.history = []
 
         # tokenization is done to measure thread length
@@ -57,7 +53,7 @@ class MainWindow(Tk):
         self.update()
 
         # thread_box is a Text object displaying current conversation history
-        self.border = round(self.winfo_height() / 100)
+        self.border = 8
         self.thread_box = Text(self, wrap=WORD, fg="#555", bg="#000", font=self.font, state=DISABLED)
         self.thread_box.bind("<FocusIn>", lambda event, box=self.thread_box: self.toggle_bg_colour(box, event))
         self.thread_box.bind("<FocusOut>", lambda event, box=self.thread_box: self.toggle_bg_colour(box, event))
@@ -91,7 +87,6 @@ class MainWindow(Tk):
         self.bind("<F11>", self.toggle_fullscreen)
 
         # Menu
-        # Preprompts - system message sent with all threads
         # Saved - manually-titled message threads
         # History - timestamp-titled message threads
         self.option_add("*Menu*activeBackground", "#333")
@@ -105,21 +100,27 @@ class MainWindow(Tk):
         self.menu.add_cascade(label="History", menu=self.history_menu)
         self.config(menu=self.menu)
 
-        # input_box initially takes up only one row
-        self.width = self.winfo_width()
+        # set up preprompt menu
+        with open("preprompts.json") as f:
+            pp_data = json.load(f)
+            self.pp_list = {p['title']: p['prompt'] for p in pp_data}
+        self.pp = None
+        self.pp_str = StringVar(self, "Default")
+        self.pp_title_list = ["Default"] + [k for k,v in self.pp_list.items()]
+        self.pp_menu = OptionMenu(self, self.pp_str, self.pp_title_list, command=self.set_pp)
+        self.pp_menu.grid(row=1, column=2, sticky=S+E+W, padx=(0, self.border), pady=(0, self.border))
+        self.pp_menu.configure(background="#333", foreground="#FFF", activebackground="#555", activeforeground="#FFF", relief="raised", direction="above")
+        self.pp_menu.bind("<Enter>", self.on_pp_hover)
+        self.pp_menu.bind("<Leave>", self.on_pp_unhover)
+        self.populate_pp_menu()
+
+        # configure layout spacing
         self.grid_columnconfigure(0, weight = 1)
         self.grid_columnconfigure(1, weight = 4)
         self.grid_columnconfigure(2, weight = 1)
         self.grid_rowconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=0)
 
-        self.pp_str = StringVar(self, "Default")
-        self.pp_titles = ["Default"] + [k for k,v in self.pp_list.items()]
-        self.pp_menu = OptionMenu(self, self.pp_str, self.pp_titles, command=self.set_pp)
-        self.pp_menu.grid(row=1, column=2, sticky=S+E+W, padx=(0, self.border), pady=(0, self.border))
-        self.pp_menu.configure(background="#333", foreground="#FFF", activebackground="#555", activeforeground="#FFF", relief="raised", direction="above")
-
-        self.populate_pp_menu()
         self.update()
         self.new_conversation()
 
@@ -318,6 +319,28 @@ class MainWindow(Tk):
         self.pp_menu["menu"].add_command(label="Default", command=lambda t="Default": self.set_pp(t))
         for k,v in self.pp_list.items():
             self.pp_menu["menu"].add_command(label=k, command=lambda t=k: self.set_pp(t))
+
+    def on_pp_hover(self, event):
+        if self.pp:
+            hover_text = self.pp
+            hover_colour = "#66f"
+        else:
+            hover_text = "Default: no preprompt."
+            hover_colour = "#555"
+        text_width = self.font.measure(hover_text)
+        window_width = self.winfo_width()
+        max_width = int(window_width / 2.5)
+        x = int((window_width  - min(max_width, text_width + self.border) - self.pp_menu.winfo_width()) / 2)
+        y = int((self.winfo_height() - self.font.metrics("linespace") * text_width / max_width) / 2)
+        self.pp_hover_label = Toplevel(self.pp_menu)
+        self.pp_hover_label.wm_overrideredirect(True)
+        self.pp_hover_label.wm_geometry(f"+{x}+{y}")
+        label = Label(self.pp_hover_label, text=hover_text, wraplength=max_width, bg="#000", fg=hover_colour, font=self.font, relief="raised", justify=LEFT)
+        label.pack()
+
+    def on_pp_unhover(self, event):
+        if self.pp_hover_label:
+            self.pp_hover_label.destroy()
 
     #--------------#
     # History menu #

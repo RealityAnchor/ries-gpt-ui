@@ -16,6 +16,7 @@
 - Field to set API key within app
 - Lock vertical position toggle
 - Copy button beside responses and/or codeblocks
+- Scrollbar
 
 ## History menu
 - Update without restarting
@@ -52,6 +53,7 @@
 - Represent prompt-response pairs in left column, numbered
 - Snap to prompt when chapter number clicked
 - Display options below chapter numbers
+  - Copy
   - Collapse/expand
   - Delete (and undo)
   - 3-way toggle for token limit
