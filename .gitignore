@@ -2,6 +2,6 @@
 history/*.json
 
 # shortcut
-ChatGPT GUI.lnk
+GPT.lnk
 
 __pycache__/
