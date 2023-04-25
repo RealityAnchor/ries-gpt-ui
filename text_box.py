@@ -4,9 +4,9 @@ from tkinter.font import Font
 class TextBox(Text):
   def __init__(self, parent):
     super().__init__(parent)
-    self.font = Font(family="Arial", size=14)
-    self.padding = 8
-    self.config(wrap=WORD, bg="#000", font=self.font)
+    self.padding = parent.padding
+    self.font = parent.font
+    self.config(wrap=WORD, bg="#000", font=parent.font)
     self.grid(column=1, sticky="nsew", padx=self.padding, pady=self.padding)
     self.bind("<FocusIn>", lambda event, box=self: toggle_bg_colour(box, event))
     self.bind("<FocusOut>", lambda event, box=self: toggle_bg_colour(box, event))
@@ -33,8 +33,8 @@ class ThreadBox(TextBox):
     if self.index(INSERT) != "1.0":
       self.insert(END, "\n---\n", "system")
     self.insert(END, message, role)
-    self.see(END)
     self.config(state=DISABLED) # disable editing text in thread_box
+    self.see(END)
 
   def clear(self):
     self.config(state=NORMAL)
@@ -79,5 +79,3 @@ def toggle_bg_colour(box, event=None):
     box.config(background="#080808")
   elif event.type == "10": # <FocusOut>
     box.config(background="#000")
-
-    
