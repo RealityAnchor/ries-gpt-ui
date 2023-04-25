@@ -14,5 +14,9 @@
 {
   "title": "Poet",
   "prompt": "Write beautifully and metaphorically."
+},
+{
+  "title": "XY Problem",
+  "prompt": "In your reply, consider the XY problem (asking about an attempted solution rather than the underlying problem)."
 }
 ]

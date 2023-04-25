@@ -1,5 +1,9 @@
 # To Do
 
+## Bugs
+- after f5, responses sometimes do not factor in user input
+- search sometimes freezes in file search
+
 ## Features
 - Slice messages partway through if over 3k tokens
 - Help button ctrl-h
@@ -39,14 +43,14 @@
 - Colours
 
 ## SearchWindow class `ctrl-s`
-- Clear search button
-- Handle special characters in filenames (apostrophes, ...)
+- Add progress bar for file search
+- Cache data for faster search
+- Indicate failed search
+- Add "match case" toggle
 - Separate tag search field + content search field
-- Optimization
-  - Stop file search after first match
+- Stop file search after first match
 
 ## PrepromptEditor class `ctrl-p`
-- Show pp on hover in menu
 - Implement pp editing/creation window
 
 ## Chapters
