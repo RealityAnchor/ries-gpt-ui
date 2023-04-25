@@ -20,49 +20,20 @@ import tiktoken
 
 # custom
 from search_window import SearchWindow
+from text_box import ThreadBox, InputBox
 import gpt
+
 
 # main tkinter window
 class MainWindow(Tk):
-
   def __init__(self):
     super().__init__()
     self.init_variables()
     self.update()
-
-    # thread_box is a Text object displaying current conversation history
-    self.border = 8
-    self.thread_box = Text(self, wrap=WORD, fg="#555", bg="#000", font=self.font, state=DISABLED)
-    self.thread_box.bind("<FocusIn>", lambda event, box=self.thread_box: self.toggle_bg_colour(box, event))
-    self.thread_box.bind("<FocusOut>", lambda event, box=self.thread_box: self.toggle_bg_colour(box, event))
-    self.thread_box.grid(row=0, column=1, sticky=N+S+E+W, padx=self.border, pady=self.border)
-    self.thread_box.tag_configure("user", foreground="#555") # user input grey
-    self.thread_box.tag_configure("assistant", foreground="#975") # AI output gold
-    self.thread_box.tag_configure("system", foreground="#66f") # not saved in history
-    self.thread_box.tag_configure("prompt", foreground="#66f") # not saved in history
-    self.thread_box.tag_configure("error", foreground="#f00") # not saved in history
-    self.thread_box.tag_configure("highlight", background="#ff6", foreground="#000") # search function highlight for matches
     
-    # input_box is a Text object where user can type or paste text
-    self.input_box = Text(self, wrap=WORD, height=1, fg="#888", bg="#000", font=self.font, insertbackground="#888", undo=True)
-    self.input_box.bind("<FocusIn>", lambda event, box=self.input_box: self.toggle_bg_colour(box, event))
-    self.input_box.bind("<FocusOut>", lambda event, box=self.input_box: self.toggle_bg_colour(box, event))
-    self.input_box.grid(row=1, column=1, sticky=N+S+E+W, padx=self.border, pady=(0,self.border))
-    self.input_width = self.input_box.winfo_width()
-    self.input_box.focus_set()
-    
-    # shortcut bindings
-    self.input_box.bind("<Return>", self.send_message)
-    self.input_box.bind("<Shift-Return>", self.input_newline)
-    self.input_box.bind("<KeyPress>", self.resize_input_box)
-    self.input_box.bind("<KeyRelease>", self.resize_input_box)
-    self.bind("<Configure>", self.resize_window) # keep horizontal border proportional to window width
-    self.bind("<Control-e>", self.toggle_box_focus) # toggle focus between input and thread box
-    self.bind("<Control-f>", self.toggle_search_window)
-    self.bind("<Control-s>", self.rename_thread) # change filename and title
-    self.bind("<Control-w>", self.on_close) # close current window
-    self.bind("<F5>", self.new_conversation) # clear thread_box, prepare for new file
-    self.bind("<F11>", self.toggle_fullscreen)
+    # Text widgets
+    self.thread_box = ThreadBox(self)
+    self.input_box = InputBox(self)
 
     # Menu
     # Saved - manually-titled message threads
@@ -83,23 +54,12 @@ class MainWindow(Tk):
     self.pp_title = StringVar(self, "Default")
     self.pp_title_list = self.get_pp_titles()
     self.pp_menu = OptionMenu(self, self.pp_title, self.pp_title_list, command=self.set_pp)
-    self.pp_menu.grid(row=1, column=2, sticky=S+E+W, padx=(0, self.border), pady=(0, self.border))
+    self.pp_menu.grid(row=1, column=2, sticky=S+E+W, padx=(0, self.padding), pady=(0, self.padding))
     self.pp_menu.configure(background="#333", foreground="#FFF", activebackground="#555", activeforeground="#FFF", relief="raised", direction="above")
     self.pp_menu.bind("<Enter>", self.on_pp_hover)
     self.pp_menu.bind("<Leave>", self.on_pp_hover)
     self.populate_pp_menu()
-
-    # thread box context menu
-    input_context__menu = Menu(self, tearoff=0, bg="#111")
-    input_context__menu.add_command(label="Cut", command=lambda: self.input_box.event_generate("<<Cut>>"))
-    input_context__menu.add_command(label="Copy", command=lambda: self.input_box.event_generate("<<Copy>>"))
-    input_context__menu.add_command(label="Paste", command=lambda: self.input_box.event_generate("<<Paste>>"))
-    self.input_box.bind("<Button-3>", lambda event: input_context__menu.tk_popup(event.x_root, event.y_root))
-
-    # thread box context menu
-    thread_context_menu = Menu(self, tearoff=0, bg="#111")
-    thread_context_menu.add_command(label="Copy", command=lambda: self.thread_box.event_generate("<<Copy>>"))
-    self.thread_box.bind("<Button-3>", lambda event: thread_context_menu.tk_popup(event.x_root, event.y_root))
+    self.bind_shortcuts()
 
     # configure layout spacing
     self.grid_columnconfigure(0, weight = 1)
@@ -118,6 +78,7 @@ class MainWindow(Tk):
     self.minsize(500, 500)
     self.configure(bg="#040404") # dark grey background
     self.history = []
+    self.padding = 8
 
     # tokenization is done to measure thread length
     # gpt-3.5-turbo can't handle more than 4096 tokens
@@ -127,14 +88,23 @@ class MainWindow(Tk):
     self.history_slice_index = 0
     self.slice_token_index = 0
 
-    # default thread title set to current date and time yyyy-mm-dd_hhmmss
+    # thread title set to current date and time yyyy-mm-dd_hhmmss
     self.timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
     self.filename = self.timestamp
-
     self.font = Font(family="Arial", size=14)
     self.search_window_attributes = {}
     self.search_window = None
     self.protocol("WM_DELETE_WINDOW", self.on_close)
+
+  def bind_shortcuts(self):
+    self.bind("<Return>", self.send_message)
+    self.bind("<Configure>", self.resize_window) # keep horizontal padding proportional to window width
+    self.bind("<Control-e>", self.toggle_box_focus) # toggle focus between input and thread box
+    self.bind("<Control-f>", self.toggle_search_window)
+    self.bind("<Control-s>", self.rename_thread) # change filename and title
+    self.bind("<Control-w>", self.on_close) # close current window
+    self.bind("<F5>", self.new_conversation) # clear thread_box, prepare for new file
+    self.bind("<F11>", self.toggle_fullscreen)
 
   #-----------#
   # Messaging #
@@ -142,16 +112,27 @@ class MainWindow(Tk):
 
   # Return
   def send_message(self, event=None):
-    in_content = f"{self.input_box.get('1.0', 'end').strip()}" # store input
-    self.input_box.delete("1.0", END) # clear input
-    self.history.append({"role": "user", "content": in_content}) # add input to current thread history
+    user_prompt = self.input_box.get_message()
+    self.history.append({"role": "user", "content": user_prompt})
+    self.thread_box.add_message(user_prompt, "user")
     self.save_file()
-    self.update_thread_box()
     # make GPT API call to OpenAI with current message thread
-    # multithreading so that program doesn't freeze while waiting for response
-    t = threading.Thread(target=self.invoke_gpt, args=(self.engine, self.history[self.history_slice_index:]))
+    t = threading.Thread(target=self.invoke_gpt, args=(self.engine, self.truncated_thread()))
     t.start()
     return "break" # no newline character
+
+  # reduce long threads to not send more than max_tokens via API call
+  def truncated_thread(self):
+    thread = self.history.copy()
+    thread_token_counts = [len(self.encoding.encode(entry["content"])) for entry in self.history]
+    while sum(thread_token_counts) > self.max_tokens:
+      thread_token_counts.pop(0)
+    if len(thread_token_counts) < len(self.history):
+      thread = thread[-(len(thread_token_counts)+1):]
+      # first_message_token_count = len(self.encoding.encode(thread[0]["content"]))
+      truncate_index = self.max_tokens - sum(thread_token_counts)
+      thread[0]["content"] = self.encoding.decode(self.encoding.encode(thread[0]["content"])[-truncate_index:])
+    return thread
 
   def invoke_gpt(self, engine, history):
     try:
@@ -160,53 +141,15 @@ class MainWindow(Tk):
       response = gpt.api_call(engine, history) # using ChatCompletion
       if self.pp:
         history.pop(-1) # Preprompt removed (not included in history)
-      out_content = response["choices"][0]["message"]["content"]
-      self.history.append({"role": "assistant", "content": out_content})
+      gpt_response = response["choices"][0]["message"]["content"]
+      self.history.append({"role": "assistant", "content": gpt_response})
+      self.thread_box.add_message(gpt_response, "assistant")
       self.save_file()
-      self.update_thread_box()
     except Exception as err:
       self.thread_box.config(state=NORMAL)
       self.thread_box.insert(END, f"\n\n{err}", "error")
       self.thread_box.config(state=DISABLED)
       self.thread_box.see(END)
-
-  # display current message history in thread_box
-  def update_thread_box(self):
-    self.thread_box.config(state=NORMAL) # enable editing text in thread_box
-    self.thread_box.delete("1.0", END)
-    assistant_message_index = "0.0"
-    thread_tokens = [len(self.encoding.encode(entry["content"])) for entry in self.history]
-    if self.pp:
-      pp_length = len(self.encoding.encode(self.pp))
-    else:
-      pp_length = 0
-    while sum(thread_tokens) + pp_length > self.max_tokens:
-      thread_tokens.pop(0)
-    if len(thread_tokens) < len(self.history):
-      self.history_slice_index = len(self.history) - len(thread_tokens) - 1
-      tokenized_msg = self.encoding.encode(self.history[self.history_slice_index]["content"])
-      spare_tokens = self.max_tokens - pp_length - sum(thread_tokens)
-      self.slice_token_index = len(tokenized_msg) - spare_tokens
-    for i, entry in enumerate(self.history):
-      if i > 0:
-        self.thread_box.insert(END, "\n\n---\n\n", "system") # triple dash for markdown formatting
-      if i == self.history_slice_index:
-        self.thread_box.insert(END, f"{entry['content'][:self.slice_token_index]}", entry["role"])
-        self.thread_box.insert(END, "|", "system")
-        self.thread_box.insert(END, f"{entry['content'][self.slice_token_index:]}", entry["role"])
-      else:
-        self.thread_box.insert(END, f"{entry['content']}", entry["role"])
-        if entry["role"] == "assistant":
-          assistant_message_index = self.thread_box.index(END) # start index of most recent message
-    self.thread_box.config(state=DISABLED) # disable editing text in thread_box
-    # move view to show beginning of most recent message
-    self.thread_box.yview_moveto(int(assistant_message_index.split('.')[0]) / int(self.thread_box.index(END).split('.')[0]))
-    # self.thread_box.see(assistant_message_index)
-
-  # Shift-Return
-  def input_newline(self, event=None):
-    self.input_box.insert(INSERT, "\n")
-    return "break"
 
   # Ctrl-E
   def toggle_box_focus(self, event=None):
@@ -214,22 +157,6 @@ class MainWindow(Tk):
       self.thread_box.focus_set()
     else:
       self.input_box.focus_set()
-    
-  # Key-Press, Key-Release
-  # dynamically resize input_box while typing or resizing window
-  def resize_input_box(self, event=None):
-    num_lines = 0
-    for line in self.input_box.get("1.0", "end").splitlines():
-      num_lines += 1 + int(self.font.measure(line) / self.input_width)
-    self.input_box.config(height=min(num_lines, 20))
-    self.input_box.see(INSERT)
-
-  # clarify caret location
-  def toggle_bg_colour(self, box, event=None):
-    if event.type == "9": # <FocusIn>
-      box.config(background="#080808")
-    elif event.type == "10": # <FocusOut>
-      box.config(background="#000")
 
   #---------------#
   # Search Window #
@@ -247,17 +174,6 @@ class MainWindow(Tk):
     else:
       search_window = SearchWindow(self, self.search_window_attributes)
       self.search_window = search_window
-
-  def find_next_string(self, query_string, starting_index, backwards=False):
-    first_char_index = None
-    last_char_index = None
-    first_char_index = self.thread_box.search(query_string, starting_index, nocase=True, backwards=backwards)
-    if first_char_index: # add highlighting on matches
-      self.thread_box.tag_remove("highlight", "1.0", END)
-      last_char_index = f"{first_char_index}+{len(query_string)}c"
-      self.thread_box.tag_add("highlight", first_char_index, last_char_index)
-      self.thread_box.see(first_char_index)
-    return first_char_index
 
   #--------------------#
   # Title and filename #
@@ -292,7 +208,7 @@ class MainWindow(Tk):
     self.filename_list = self.get_history_filenames("history", ".json")
     self.populate_history_menu(self.filename_list)
     self.title(self.engine)
-    self.update_thread_box()
+    self.thread_box.clear()
 
   def update_title(self, filename):
     filepath = os.path.join(os.path.dirname(__file__),"history",filename)
@@ -307,12 +223,14 @@ class MainWindow(Tk):
 
   def load_file(self, filename):
     dirname = os.path.dirname(__file__)
-    filepath = os.path.join(dirname, 'history',filename)
+    filepath = os.path.join(dirname, 'history', filename)
     with open(f"{filepath}.json", "r") as f:
       self.history = json.load(f)
     self.filename_list = self.get_history_filenames("history", ".json")
     self.filename = filename
-    self.update_thread_box()
+    self.thread_box.clear()
+    for m in self.history:
+      self.thread_box.add_message(m["content"], m["role"])
     self.update_title(filename)
 
   #----------------#
@@ -340,8 +258,6 @@ class MainWindow(Tk):
      self.pp_title_list = ["Default"] + [k for k,v in self.pp_list.items()]
 
   def on_pp_hover(self, event):
-    print(f'{event.type}')
-    print(event.type)
     if event.type == "7":
       if self.pp:
         hover_text = self.pp
@@ -352,7 +268,7 @@ class MainWindow(Tk):
       text_width = self.font.measure(hover_text)
       window_width = self.winfo_width()
       max_width = int(window_width / 2.5)
-      x = int((window_width - min(max_width, text_width + self.border) - self.pp_menu.winfo_width()) / 2)
+      x = int((window_width - min(max_width, text_width + self.padding) - self.pp_menu.winfo_width()) / 2)
       y = int((self.winfo_height() - self.font.metrics("linespace") * text_width / max_width) / 2)
       self.pp_hover_label = Toplevel(self.pp_menu)
       self.pp_hover_label.wm_overrideredirect(True)
@@ -381,13 +297,12 @@ class MainWindow(Tk):
     dirname = os.path.dirname(__file__)
     for filename in filenames:
       historyfolder = "history"
-      filepath = f"{os.path.join(dirname,historyfolder,filename)}.json"
+      filepath = f"{os.path.join(dirname, historyfolder, filename)}.json"
       file_size = round(os.path.getsize(filepath) / 1024, 1)
       if re.match(r"\d{4}-\d{2}-\d{2}_\d{6}", filename): # yyyy-mm-dd_hhmmss default filename
         cur_menu = self.history_menu
       else: # custom filename
         cur_menu = self.save_menu
-      filename = filename.replace(".json", "")
       cur_menu.add_command(label=f"{filename} ({file_size} KB)", command=lambda name=filename: self.load_file(name)) # load file on click
     self.menu.add_cascade(label="Saved", menu=self.save_menu)
     self.menu.add_cascade(label="History", menu=self.history_menu)
@@ -403,8 +318,7 @@ class MainWindow(Tk):
   # Configure
   # update formatting dynamically whenever window changes size or position
   def resize_window(self, event=None):
-    self.input_width = self.input_box.winfo_width()
-    self.resize_input_box()
+    self.input_box.resize()
 
   # cleanup tkinter windows
   def on_close(self, event=None):
