@@ -136,10 +136,27 @@ class MainWindow(Tk):
       self.thread_box.config(state=DISABLED)
       self.thread_box.see(END)
 
+  def load_file(self, filename):
+    filepath = os.path.join(self.directory, 'history', filename)
+    with open(f"{filepath}.json", "r") as f:
+      self.history = json.load(f)
+    self.filename = filename
+    self.thread_box.clear()
+    for m in self.history:
+      self.thread_box.add_message(m["content"], m["role"])
+    file_size = round(os.path.getsize(f"{filepath}.json") / 1024, 1)
+    self.title(f"{filename} ({file_size} KB)") # main_window title
+
   def save_file(self):
-    filepath = os.path.join(self.directory, "history", self.filename)
-    with open(f"{filepath}.json", "w") as f:
+    old_name = self.filename
+    new_name = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+    old_path = os.path.join(self.directory, "history", old_name)
+    new_path = os.path.join(self.directory, "history", new_name)
+    with open(f"{old_path}.json", "w") as f:
       json.dump(self.history, f)
+    os.rename(f"{old_path}.json", f"{new_path}.json")
+    self.filename = new_name
+    self.title(self.filename)
 
   #-----------#
   # Shortcuts #

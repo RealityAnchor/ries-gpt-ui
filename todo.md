@@ -1,10 +1,10 @@
 # To Do
 
 ## Bugs
-- search sometimes freezes in file search
+- unfuck save/load
+- history menu white bg -> black
 
 ## Features
-- Slice messages partway through if over 3k tokens
 - Help button ctrl-h
 - Ctrl-up/down, snap to prompts, up-down always navigate one line
 - Responsive web design for phone/desktop online app

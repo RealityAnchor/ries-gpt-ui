@@ -31,18 +31,7 @@ class HistoryMenu(OptionMenu):
       filepath = os.path.join(self.directory, "history", filename)
       file_size = round(os.path.getsize(f"{filepath}.json") / 1024, 1)
       self["menu"].add_command(label=f"{filename} ({file_size} KB)",
-          font=self.font, command=lambda f=filename: self.load_file(f))
-
-  def load_file(self, filename):
-    filepath = os.path.join(self.directory, 'history', filename)
-    with open(f"{filepath}.json", "r") as f:
-      self.history = json.load(f)
-    self.filename = filename
-    self.parent.thread_box.clear()
-    for m in self.history:
-      self.parent.thread_box.add_message(m["content"], m["role"])
-    file_size = round(os.path.getsize(f"{filepath}.json") / 1024, 1)
-    self.parent.title(f"{filename} ({file_size} KB)") # main_window title
+          font=self.font, command=lambda f=filename: self.parent.load_file(f))
 
   def get_history_titles(self):
     filenames = os.listdir(os.path.join(self.parent.directory,"history"))
