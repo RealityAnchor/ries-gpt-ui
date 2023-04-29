@@ -1,13 +1,17 @@
-from tkinter import *
+from tkinter import Toplevel, StringVar, LEFT, Label, END, OptionMenu, N, S, E, W
 import json
 
 class PrepromptMenu(OptionMenu):
   def __init__(self, parent, title):
     super().__init__(parent, title, "Default")
+    self.option_add("*Menu*activeBackground", "#333")
+    self.option_add("*Menu*activeForeground", "#975")
+    self.option_add("*Menu*background", "#000")
+    self.option_add("*Menu*foreground", "#975")
     self.pp = None
+    self.parent = parent
     self.font = parent.font
     self.padding = parent.padding
-    self.parent = parent
     self.pp_title = StringVar(self, "Default")
     self.pp_title_list = self.get_pp_titles()
     self.grid(row=1, column=2, sticky=S+E+W, padx=(0, self.padding), pady=(0, self.padding))
@@ -45,18 +49,18 @@ class PrepromptMenu(OptionMenu):
       else:
         hover_text = "Default: no preprompt."
         hover_colour = "#555"
-      text_width = self.font.measure(hover_text)
       screen_width = self.parent.winfo_screenwidth()
       screen_height = self.parent.winfo_screenheight()
       max_width = int(screen_width / 2.5)
-      text_width = min(self.font.measure(hover_text), max_width)
+      text_width = self.font.measure(hover_text)
       text_height = int(self.font.metrics("linespace") * text_width / max_width)
-      x = int((screen_width - text_width) / 2)
+      x = int((screen_width - min(text_width, max_width)) / 2)
       y = int((screen_height - text_height) / 2)
       self.pp_hover_label = Toplevel(self)
       self.pp_hover_label.wm_overrideredirect(True)
       self.pp_hover_label.wm_geometry(f"+{x}+{y}")
-      label = Label(self.pp_hover_label, text=hover_text, wraplength=max_width, bg="#000", fg=hover_colour, font=self.font, relief="raised", justify=LEFT)
+      label = Label(self.pp_hover_label, text=hover_text, wraplength=max_width,
+          bg="#000", fg=hover_colour, font=self.font, relief="raised", justify=LEFT)
       label.pack()
     elif event.type == "8":
       if self.pp_hover_label:

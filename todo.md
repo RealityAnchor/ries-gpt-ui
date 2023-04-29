@@ -1,7 +1,6 @@
 # To Do
 
 ## Bugs
-- after f5, responses sometimes do not factor in user input
 - search sometimes freezes in file search
 
 ## Features
@@ -19,8 +18,8 @@
 - Drag inner window to adjust width or toggle narrow/wide for reading/coding
 - Field to set API key within app
 - Lock vertical position toggle
-- Copy button beside responses and/or codeblocks
 - Scrollbar
+- add alpha channel for icon
 
 ## History menu
 - Update without restarting
